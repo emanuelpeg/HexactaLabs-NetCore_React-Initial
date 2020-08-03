@@ -19,10 +19,44 @@ Netcore posee un framework de trabajo para desarrollar las APIs. [Link](https://
 
 ### Inyección de Dependencias
 Es una técnica en la que un objeto suministra las dependencias de otro. Está tecnica nos permite evitar la creación de objetos de servicio, para lograr legibilidad y reuso de código.
+
+Cualquier aplicación no trivial está formada por dos o más clases que colaboran entre sí para realizar alguna lógica. Tradicionalmente cada objeto se hacía cargo de obtener sus propias referencias a los objetos a los cuales colaboraba (sus dependencias). Esto lleva a código acoplado y difícil de probar.
+
+Cuando se aplica inyección de dependencia le decimos a una entidad externa que provea las dependencias a los objetos. Esto nos resuelve el problema del acoplamiento.
+
+El acoplamiento es un mal necesario ya que sin él los objetos no podrían interactuar para resolver problemas, pero cuan menor sea el acoplamiento es más reutilizable, comprobable y flexible.
+
+La ventaja clave de inyección de dependencia es el acoplamiento débil. Si un objeto solo conoce sus dependencias mediante su interfaz (no su implementación o como fueron definidos) entonces la dependencia puede intercambiarse con una implementación diferente sin que el objeto dependiente sepa la diferencia.
+
 La inyección de dependencias es una de las maneras de implementar [Inversión de Control o IoC](https://en.wikipedia.org/wiki/Inversion_of_control).
 
 Netcore posee soporte nativo para Inyección de Dependencias, el cual es utilizado en este proyecto. [Link](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection?view=aspnetcore-3.1)
 
+Para injectar objetos, debemos utilizar los constructores de la clase. En los constructores indicamos que debe injectar el contenedor de .net, por ejemplo : 
+
+```C#
+   public class ProductTypeService: BaseService<ProductType>
+    {                
+        public ProductTypeService(IRepository<ProductType> repository)
+            : base(repository)
+        {
+        }
+    }
+```
+En el ejemplo se puede ver que se esta inyectando un IRepository<ProductType> al servicio ProductTypeService y el contenedor puede saber que inyectar, dado que busca en la clase Startup que instancia debe injectar según el tipo. Esto se inica con esta linea :
+
+services.AddTransient<IRepository<ProductType>, BaseRepository<ProductType>>();
+
+En la clase Startup. 
+
+### Startup
+La clase Startup esta contenida en el archivo Startup.cs en la carpeta raíz del proyecto.
+
+Las aplicaciones ASP.NET Core debe incluir esta clase. Como su nombre indica, se ejecuta primero cuando se inicia la aplicación. Y tiene como objetivo brindar un conjunto de configuraciones para que nuestra aplicación pueda funcionar. 
+
+El método ConfigureServices es un lugar donde se registran las clases dependientes en el contenedor IoC o injección de dependencia. Después de registrar la clase dependiente, se puede usar en cualquier lugar de la aplicación. Solo necesita incluirlo en el parámetro del constructor de una clase donde desea usarlo y el contenedor de IoC lo inyectará automáticamente.
+
+El método Configure es un lugar donde puede configurar la canalización de solicitudes de aplicaciones para su aplicación utilizando la instancia IApplicationBuilder que proporciona el contenedor IoC.
 
 ## Tipos de Clases
 Se detallan las clases generales que se encuentran en el backend.
@@ -55,6 +89,29 @@ Microsoft.AspNetCore.Mvc proporciona atributos que se pueden usar para configura
 ### Mapper
 - Es utilizado para mapear un modelo de negocio a un DTO o viceversa.
 
+## Interacción 
+
+Cuando desde frontend realizan un pedido al backend, este es atendido por un controller determinado. El controller que atiende este pedido es determinado por la URL donde se hace el pedido. Dicho Controller utiliza un service para resolver los pedidos. El service utiliza un DAO para acceder a la base de datos, un mapper para transformar un objeto del modelo a DTO y siempre retorna un DTO. Dicha interacción se puede ver en este diagrama de secuencia: 
+
+![sequencediagram](./images/sequencediagram.png)
+<!--- ir a https://sequencediagram.org/ y pegar el codigo : 
+participant frontend
+participant Controller
+participant Service
+participant Mapper
+participant DAO
+
+frontend->Controller:json
+Controller->Service:DTO
+Service->DAO:obtener información de la base de datos
+Service<-DAO:Objeto del modelo\n
+Service->Mapper:objeto del modelo
+Service<-Mapper:DTO
+Controller<-Service:DTO\n
+frontend<--Controller:json
+--->
+
+
 ### Notas
 La [Estructura de Carpetas](./estructura-carpetas-netcore.md) sigue la lógica de separar los elementos antes mencionados.
 Normalmente este esquema recibe el nombre de [N-Layer](https://es.wikipedia.org/wiki/Programaci%C3%B3n_por_capas)
@@ -62,4 +119,5 @@ Normalmente este esquema recibe el nombre de [N-Layer](https://es.wikipedia.org/
 ## Referencias
 [Documentación Oficial Net Core](https://docs.microsoft.com/es-es/dotnet/core/)   
 [Documentación Oficial Web API](https://docs.microsoft.com/en-us/aspnet/web-api/)   
-[Documentación Oficial MVC](https://docs.microsoft.com/en-us/aspnet/mvc/)   
+[Documentación Oficial MVC](https://docs.microsoft.com/en-us/aspnet/mvc/)  
+[Documentación dependeny injection](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection) 
